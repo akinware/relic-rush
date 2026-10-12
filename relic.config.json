@@ -3,9 +3,9 @@
   "appName": "Relic Rush",
   "versionName": "1.0.0",
   "admob": {
-    "appId": "ca-app-pub-3940256099942544~3347511713",
-    "rewarded": "ca-app-pub-3940256099942544/5224354917",
-    "interstitial": "ca-app-pub-3940256099942544/1033173712",
+    "appId": "ca-app-pub-8021868154469622~4433101340",
+    "rewarded": "ca-app-pub-8021868154469622/8914526975",
+    "interstitial": "ca-app-pub-8021868154469622/5817590343",
     "testing": true
   },
   "ads": {
