@@ -1,0 +1,26 @@
+Relic Rush
+Copyright (c) 2026 Akin Akcam (Akinware, akinware.live). All rights reserved.
+
+This repository is public so that people can see how the game is made.
+It is NOT open source.
+
+Unless a file is listed below as third-party, the source code, game design,
+original artwork, textures, original music, store graphics and all other
+original content in this repository are the exclusive property of Akinware.
+No licence is granted to copy, modify, distribute, publish, sublicense, sell
+or reuse any of it, in whole or in part, in any other project or product,
+commercial or not, without prior written permission from Akinware
+(akinakcam@akinware.live).
+
+Viewing this repository and forking it on GitHub are allowed only to the
+extent the GitHub Terms of Service require. Such a fork grants no further
+rights.
+
+Third-party components keep their own licences (details in CREDITS.txt).
+This notice does not restrict anything those licences allow:
+  - vendor/procedural-animals/        MIT, see vendor/procedural-animals/LICENSE
+  - tiger-*.mp3                       CC BY-SA 3.0, 0 A.D. by Wildfire Games
+  - music-menu.ogg, music-idol.ogg    CC BY-SA, SuperTux
+  - character models (*.glb)          based on CC0 1.0 assets by Quaternius and Kay Lousberg
+  - lilita-one-latin-400-normal.woff2 SIL Open Font License 1.1
+  - npm dependencies                  their own licences, see package-lock.json

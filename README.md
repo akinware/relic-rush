@@ -1,5 +1,7 @@
 # Relic Rush 🏃‍♂️🐯
 
+> **© 2026 Akinware. All rights reserved.** This code is public to read, not to reuse. See [LICENSE](LICENSE). Play the game at [relicrush.akinware.live](https://relicrush.akinware.live) or on [itch.io](https://akinware.itch.io/relic-rush).
+
 Akinware'in sonsuz koşu oyunu. Three.js ile yazıldı, Android'e Capacitor ile paketleniyor. Reklamlar Google AdMob, satın almalar Google Play Billing ile çalışıyor.
 
 ---
