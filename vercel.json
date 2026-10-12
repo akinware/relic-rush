@@ -1,5 +1,5 @@
 {
-  "installCommand": "npm ci",
+  "installCommand": "npm install --no-audit --no-fund",
   "buildCommand": "node build.mjs",
   "outputDirectory": "dist",
   "headers": [
