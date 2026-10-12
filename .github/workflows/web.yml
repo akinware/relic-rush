@@ -1,0 +1,27 @@
+# Builds the browser version of the game. Vercel builds the live site by itself;
+# this workflow only produces a ready-to-upload zip for itch.io:
+# Actions → "Build web version (itch.io)" → latest run → Artifacts → relic-rush-web-… (index.html is at the top level).
+name: Build web version (itch.io)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node build.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: relic-rush-web-${{ github.run_number }}
+          path: dist/
+          retention-days: 30

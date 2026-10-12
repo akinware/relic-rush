@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<!--HEAD:START-->
+<title>Relic Rush</title>
+<meta name="description" content="Run the ancient jungle road, dodge ruins, grab gold. An endless runner by Akinware.">
+<meta name="theme-color" content="#14211a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<!--HEAD:END-->
+<style>
+/*FONTFACE:START*/
+@font-face { font-family: "Lilita One"; src: url("lilita-one-latin-400-normal.woff2") format("woff2"); font-display: swap; }
+/*FONTFACE:END*/
+/* Layout: full-bleed 3D canvas; HTML layers on top for HUD, menu, pause and results. Single, deliberate dusk-jungle look. */
+:root {
+  --ink: #14211a;
+  --panel: rgba(16, 28, 20, 0.82);
+  --gold: #ffc93c;
+  --gold-deep: #e89a12;
+  --ember: #ff7a2f;
+  --cream: #fff4df;
+  --muted: #d7c7a3;
+  --leaf: #8fbf6a;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #14211a; color: var(--cream); font-family: var(--body);
+  overscroll-behavior: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; }
+#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+#vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse 120% 95% at 50% 55%, transparent 58%, rgba(20, 10, 0, 0.32) 100%); }
+body.boosting #vignette { background: radial-gradient(ellipse 110% 90% at 50% 55%, transparent 48%, rgba(255, 190, 60, 0.28) 100%); }
+.layer { position: fixed; inset: 0; display: flex; flex-direction: column; pointer-events: none;
+  padding: calc(max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px)) + 14px) 16px calc(max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px)) + 20px); }
+.layer[hidden] { display: none !important; }
+button { font: inherit; color: inherit; border: 0; cursor: pointer; pointer-events: auto; touch-action: manipulation; }
+button:focus-visible { outline: 3px solid var(--cream); outline-offset: 3px; }
+
+/* Buttons */
+.btn { font-family: var(--display); letter-spacing: .03em; border-radius: 999px; padding: 14px 28px; font-size: 22px;
+  background: rgba(255,255,255,.12); color: var(--cream); box-shadow: inset 0 -4px 0 rgba(0,0,0,.25); transition: transform .08s; }
+.btn:active { transform: translateY(2px) scale(.98); }
+.btn.primary { background: linear-gradient(180deg, #ffd85a, var(--gold) 45%, var(--gold-deep)); color: #3a2205; font-size: 30px; padding: 16px 56px;
+  box-shadow: inset 0 -6px 0 #b86f00, 0 10px 30px rgba(255,170,40,.35); text-shadow: 0 1px 0 rgba(255,255,255,.5); }
+.icon-btn { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; background: rgba(16,28,20,.55);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-family: var(--display); font-size: 20px; color: var(--cream); }
+.icon-btn svg { width: 22px; height: 22px; }
+
+/* Menu */
+#menu { justify-content: space-between; align-items: center; text-align: center;
+  background: linear-gradient(180deg, rgba(20,33,26,.55) 0%, rgba(20,33,26,0) 30%, rgba(20,33,26,0) 55%, rgba(20,33,26,.85) 100%); }
+.brand { margin-top: 4vh; }
+.logo { margin: 0; font-family: var(--display); font-weight: 400; line-height: .84; font-size: clamp(64px, 21vw, 112px);
+  display: flex; flex-direction: column; transform: rotate(-4deg); letter-spacing: .01em; }
+.logo span { color: var(--gold); -webkit-text-stroke: 3px #3a2205; paint-order: stroke fill;
+  text-shadow: 0 6px 0 #3a2205, 0 14px 30px rgba(0,0,0,.35); }
+.logo span + span { color: var(--ember); margin-left: .6em; }
+.by { margin: 14px 0 0; font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--cream); opacity: .85; }
+.menu-bottom { display: grid; gap: 16px; justify-items: center; width: 100%; max-width: 420px; }
+.best-chip { font-family: var(--display); font-size: 18px; letter-spacing: .04em; padding: 6px 16px; border-radius: 999px; background: rgba(0,0,0,.35); }
+.best-chip b { color: var(--gold); font-weight: 400; margin-left: 6px; font-variant-numeric: tabular-nums; }
+.howto { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; font-size: 13px; color: var(--muted); }
+.howto span { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 10px; background: rgba(0,0,0,.3); }
+.howto b { font-family: var(--display); font-weight: 400; color: var(--cream); font-size: 16px; }
+.menu-row { display: flex; gap: 10px; }
+.chips-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.best-chip { display: inline-flex; align-items: center; gap: 6px; }
+.coin-ico.sm { width: 18px; height: 18px; }
+.skin-pick { display: flex; align-items: center; gap: 12px; }
+.skin-pick .icon-btn { font-size: 30px; line-height: 1; padding-bottom: 4px; }
+.skin-label { min-width: 150px; display: grid; gap: 2px; font-family: var(--display); font-size: 24px; letter-spacing: .03em; }
+.skin-label small { font-family: var(--body); font-size: 12px; color: var(--muted); letter-spacing: 0; }
+.btn:disabled { opacity: .6; cursor: default; }
+.shield-ico { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center; color: #8fd3ff; background: rgba(16,28,20,.55); }
+.shield-ico svg { width: 22px; height: 22px; }
+.shield-ico[hidden] { display: none; }
+.power-gauge { position: fixed; left: 16px; bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px)) + 26px); width: 62px; height: 62px; border-radius: 50%; border: 0; padding: 0;
+  pointer-events: auto; display: grid; place-items: center; --f: 0;
+  background: conic-gradient(#ffc93c calc(var(--f) * 360deg), rgba(16, 28, 20, .55) 0); box-shadow: 0 3px 10px rgba(0,0,0,.3); transition: transform .2s; }
+.power-gauge::before { content: ''; position: absolute; inset: 6px; border-radius: 50%; background: rgba(28, 22, 14, .82); }
+.power-gauge svg { position: relative; width: 30px; height: 30px; opacity: .55; transition: opacity .2s; }
+.power-gauge small { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 700 11px/1 inherit; color: #fff4df; text-shadow: 0 1px 2px #000; opacity: 0; }
+.power-gauge.ready { animation: pgPulse .9s ease-in-out infinite; background: conic-gradient(#ffe27a 360deg, #ffe27a 0); }
+.power-gauge.ready svg { opacity: 1; }
+.power-gauge.ready small { opacity: 1; }
+@keyframes pgPulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 214, 90, .7); } 50% { transform: scale(1.09); box-shadow: 0 0 22px 6px rgba(255, 214, 90, .55); } }
+.meta.power svg { width: 20px; height: 20px; }
+.meta.power span { font-size: 12px; }
+
+
+/* HUD */
+.hud-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.dist { font-family: var(--display); font-size: 40px; line-height: 1; color: var(--cream); font-variant-numeric: tabular-nums;
+  -webkit-text-stroke: 2px rgba(20,33,26,.85); paint-order: stroke fill; text-shadow: 0 3px 0 rgba(20,33,26,.6); }
+.dist small { font-size: 20px; margin-left: 3px; color: var(--muted); }
+.hud-right { display: flex; gap: 10px; align-items: center; }
+.coins { font-family: var(--display); font-size: 24px; display: flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px;
+  border-radius: 999px; background: rgba(16,28,20,.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-variant-numeric: tabular-nums; }
+.coin-ico { width: 24px; height: 24px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff1a8, var(--gold) 45%, var(--gold-deep));
+  box-shadow: inset 0 -2px 0 #b86f00; display: inline-block; }
+.coins.pop { animation: pop .18s ease-out; }
+@keyframes pop { 50% { transform: scale(1.12); } }
+.toast { align-self: center; margin-top: 18vh; font-family: var(--display); font-size: 26px; letter-spacing: .03em; text-align: center;
+  padding: 10px 20px; border-radius: 16px; background: rgba(16,28,20,.7); color: var(--gold); animation: pulse 0.9s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.06); } }
+
+/* Cards (pause, results) */
+.center { justify-content: center; align-items: center; background: rgba(10,18,13,.45); }
+.card { pointer-events: auto; width: min(100%, 360px); background: var(--panel); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.08); border-radius: 24px; padding: 24px 22px; display: grid; gap: 16px; text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+.card h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 40px; color: var(--gold); line-height: 1; text-wrap: balance; }
+.card p.sub { margin: -6px 0 0; color: var(--muted); font-size: 14px; }
+.stats { display: grid; gap: 2px; margin: 0; }
+.stats div { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,.07); }
+.stats div:last-child { border-bottom: 0; }
+.stats dt { color: var(--muted); font-size: 14px; }
+.stats dd { margin: 0; font-family: var(--display); font-size: 24px; font-variant-numeric: tabular-nums; }
+.stats .big dd { color: var(--gold); font-size: 32px; }
+.newbest { justify-self: center; font-family: var(--display); font-size: 15px; letter-spacing: .1em; color: #3a2205; background: var(--leaf);
+  padding: 4px 12px; border-radius: 999px; transform: rotate(-3deg); }
+.card .actions { display: grid; gap: 10px; }
+.card .btn.primary { font-size: 26px; padding: 14px 20px; }
+.card .btn { font-size: 18px; padding: 12px 20px; }
+.fineprint-unused { position: fixed; left: 0; right: 0; bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px)) + 6px); text-align: center; font-size: 11px; color: rgba(255,244,223,.55); pointer-events: auto; }
+.fineprint a { color: inherit; }
+
+/* Menu top bar, wallet */
+.menu-top { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.wallet { display: flex; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 6px; border-radius: 999px; background: rgba(16,28,20,.6);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-family: var(--display); font-size: 18px; font-variant-numeric: tabular-nums; }
+.chip svg { width: 22px; height: 22px; }
+.chip .plus { width: 18px; height: 18px; border-radius: 50%; background: var(--leaf); color: #14211a; font-size: 15px; line-height: 18px; text-align: center; margin-left: 2px; }
+.menu-icons { display: flex; gap: 8px; }
+.icon-btn.ping { position: relative; }
+.icon-btn.ping::after { content: ""; position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 0 2px #14211a; }
+.brand { margin-top: 1vh; }
+
+/* Booster tray */
+.booster-tray { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
+.boost { position: relative; display: grid; justify-items: center; gap: 2px; padding: 8px 4px 6px; border-radius: 16px; background: rgba(16,28,20,.6);
+  border: 2px solid transparent; font-size: 12px; color: var(--muted); }
+.boost .bi svg { width: 28px; height: 28px; display: block; }
+.boost .bn { font-weight: 600; color: var(--cream); }
+.boost .bc { position: absolute; top: -6px; right: -4px; min-width: 24px; padding: 1px 6px; border-radius: 999px; background: #2b3a2f; color: var(--cream);
+  font-family: var(--display); font-size: 14px; border: 1px solid rgba(255,255,255,.15); }
+.boost.on { border-color: var(--gold); background: rgba(80,60,10,.65); box-shadow: 0 0 18px rgba(255,201,60,.35); }
+.boost.on .bc { background: var(--gold); color: #3a2205; }
+
+/* Revive */
+.revive-card h2 { font-size: 36px; }
+.ring { --t: 1; width: 96px; height: 96px; justify-self: center; position: relative; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 9; }
+.ring .bg { stroke: rgba(255,255,255,.12); }
+.ring .fg { stroke: var(--gold); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: calc((1 - var(--t)) * 100); }
+.ring span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 34px; }
+.btn.ad, .sbtn.ad { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn svg, .sbtn svg { width: 22px; height: 22px; }
+.btn.gemsbtn { background: linear-gradient(180deg, #6fdcff, #2ea8d8); color: #082a3a; box-shadow: inset 0 -4px 0 #1d7ea6; display: inline-flex; justify-content: center; align-items: center; gap: 8px; }
+.btn.gemsbtn svg path:first-child { fill: #fff; }
+.btn.gemsbtn.short { filter: grayscale(.6) brightness(.8); }
+.linkbtn { background: none; color: var(--muted); text-decoration: underline; font-size: 15px; padding: 6px; }
+
+/* Bottom-sheet overlays: shop, settings, daily, documents */
+.sheet { justify-content: flex-end; align-items: center; background: rgba(10,18,13,.55); padding-left: 10px; padding-right: 10px; z-index: 5; }
+.panel { pointer-events: auto; width: min(100%, 460px); max-height: 88%; display: flex; flex-direction: column; background: #1b2b21;
+  border: 1px solid rgba(255,255,255,.08); border-radius: 24px; box-shadow: 0 -10px 50px rgba(0,0,0,.5); overflow: hidden; animation: up .22s ease-out; }
+@keyframes up { from { transform: translateY(30px); opacity: 0; } }
+.panel-head { display: flex; align-items: center; gap: 10px; padding: 16px 16px 10px; }
+.panel-head h2 { margin: 0; flex: 1; font-family: var(--display); font-weight: 400; font-size: 30px; color: var(--gold); }
+.panel-head .chip { font-size: 16px; }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 0 12px 10px; }
+.tabs button { padding: 9px 4px; border-radius: 12px; background: rgba(255,255,255,.06); font-weight: 600; font-size: 13px; color: var(--muted); }
+.tabs button[aria-selected="true"] { background: var(--gold); color: #3a2205; }
+.shop-list, .settings-list { list-style: none; margin: 0; padding: 4px 12px 16px; overflow-y: auto; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+.shop-row { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 16px; background: rgba(255,255,255,.04); margin-bottom: 8px; }
+.shop-row.featured { background: linear-gradient(135deg, rgba(255,122,47,.28), rgba(255,201,60,.18)); border: 1px solid rgba(255,201,60,.4); }
+.shop-row.selected { outline: 2px solid var(--leaf); }
+.shop-ico { width: 44px; height: 44px; border-radius: 12px; background: rgba(0,0,0,.25); display: grid; place-items: center; flex: none; }
+.shop-ico svg { width: 30px; height: 30px; }
+.shop-ico .coin-ico { width: 28px; height: 28px; }
+.shop-txt { flex: 1; display: grid; gap: 2px; min-width: 0; }
+.shop-txt b { font-size: 16px; }
+.shop-txt b em { font-style: normal; color: var(--gold); font-family: var(--display); font-weight: 400; margin-left: 4px; }
+.shop-txt small { color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+.shop-head { font-family: var(--display); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 12px 4px 6px; }
+.shop-note { color: var(--muted); font-size: 12.5px; text-align: center; padding: 8px; }
+.sbtn { flex: none; min-width: 86px; padding: 10px 12px; border-radius: 12px; font-family: var(--display); font-size: 17px;
+  background: linear-gradient(180deg, #ffd85a, var(--gold-deep)); color: #3a2205; box-shadow: inset 0 -3px 0 #b86f00; }
+.sbtn.ghost { background: rgba(255,255,255,.1); color: var(--cream); box-shadow: none; }
+.sbtn.iap { background: linear-gradient(180deg, #9be37f, #5ea845); color: #10240a; box-shadow: inset 0 -3px 0 #3f7d31; }
+.sbtn.ad { background: rgba(143,191,106,.25); color: var(--cream); box-shadow: none; font-size: 15px; }
+.sbtn:disabled { opacity: .45; }
+.price { display: inline-flex; align-items: center; gap: 4px; }
+.price svg { width: 16px; height: 16px; }
+.pips { display: inline-flex; gap: 3px; margin-right: 6px; vertical-align: middle; }
+.pips i { width: 12px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.15); }
+.pips i.on { background: var(--gold); }
+.set-note { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.settings-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 6px; border-bottom: 1px solid rgba(255,255,255,.07); }
+.settings-list li.ver { justify-content: center; color: var(--muted); font-size: 12px; border: 0; }
+.toggle { min-width: 64px; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.12); font-weight: 700; }
+.toggle[aria-pressed="true"] { background: var(--leaf); color: #14211a; }
+.daily-grid { list-style: none; margin: 0; padding: 4px 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.daily-grid li { display: grid; gap: 4px; justify-items: center; padding: 10px 4px; border-radius: 14px; background: rgba(255,255,255,.05); font-size: 12px; color: var(--muted); }
+.daily-grid li:last-child { grid-column: span 2; }
+.daily-grid li span { display: flex; align-items: center; gap: 3px; color: var(--cream); font-family: var(--display); font-size: 16px; flex-wrap: wrap; justify-content: center; }
+.daily-grid li span svg { width: 20px; height: 20px; }
+.daily-grid li.today { background: rgba(255,201,60,.22); outline: 2px solid var(--gold); }
+.daily-grid li.done { opacity: .45; }
+.daily-actions { display: grid; gap: 10px; padding: 14px 16px 6px; }
+.daily-note { text-align: center; color: var(--muted); font-size: 13px; margin: 4px 16px 16px; }
+.doc-frame { flex: 1; min-height: 60vh; border: 0; background: #fff; }
+.msg { position: fixed; left: 50%; bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px)) + 90px); transform: translateX(-50%); z-index: 20; pointer-events: none;
+  padding: 10px 18px; border-radius: 999px; background: rgba(16,28,20,.92); color: var(--cream); font-weight: 600; font-size: 15px; white-space: nowrap; }
+.msg.show { animation: msg 2.2s ease forwards; }
+@keyframes msg { 0% { opacity: 0; transform: translate(-50%, 10px); } 10%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+.mul-ico { color: var(--gold); font-family: var(--display); font-size: 18px; }
+.demo-ad { position: fixed; inset: 0; z-index: 50; background: #0b0f0c; display: grid; place-items: center; pointer-events: auto; }
+.demo-ad-card { width: min(88%, 340px); display: grid; gap: 12px; text-align: center; color: #e8efe9; }
+.demo-ad-card small { letter-spacing: .14em; text-transform: uppercase; color: #8fa596; }
+.demo-ad-card b { font-family: var(--display); font-weight: 400; font-size: 34px; color: #fff; }
+.demo-ad-card p { margin: 0; color: #a9b8ad; font-size: 14px; }
+.demo-ad-bar { height: 6px; border-radius: 3px; background: #26332a; overflow: hidden; }
+.demo-ad-bar i { display: block; height: 100%; width: 0; background: var(--gold); }
+.demo-ad-card button { padding: 12px; border-radius: 12px; background: #fff; color: #111; font-weight: 700; }
+.demo-ad-card button:disabled { opacity: .5; }
+
+/* Meta row: level, missions, chests, Relic Hunt */
+.meta-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+.meta { position: relative; display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px 5px 7px; border-radius: 12px;
+  background: rgba(16,28,20,.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-family: var(--display); font-size: 15px; }
+.meta svg { width: 20px; height: 20px; }
+.meta.level b { color: var(--gold); font-weight: 400; }
+.meta.level span { font-size: 13px; padding: 1px 6px; border-radius: 999px; background: var(--gold); color: #3a2205; }
+.meta.hunt { gap: 2px; padding: 5px 7px; }
+.meta.hunt i, .hunt-row i { font-style: normal; width: 17px; height: 19px; display: grid; place-items: center; border-radius: 5px; font-size: 12px;
+  background: rgba(255,255,255,.08); color: rgba(255,244,223,.45); }
+.meta.hunt i.got, .hunt-row i.got { background: linear-gradient(180deg, #ffe08a, var(--gold-deep)); color: #4a2600; }
+.ping::after { content: ""; position: absolute; top: 4px; right: 4px; width: 9px; height: 9px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 0 2px #14211a; }
+.offer-strip { pointer-events: auto; margin: 8px auto 0; display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: center; text-align: left;
+  padding: 7px 12px; border-radius: 14px; max-width: 360px; width: 100%; background: linear-gradient(100deg, #ff7a2f, #ffb43c); color: #3a1a02;
+  box-shadow: 0 6px 20px rgba(255,122,47,.35); animation: glowpulse 2.4s ease-in-out infinite; }
+.offer-strip b { font-family: var(--display); font-weight: 400; font-size: 17px; grid-row: span 2; }
+.offer-strip span { font-size: 11.5px; font-weight: 600; }
+.offer-strip em { font-style: normal; font-size: 11px; font-weight: 700; opacity: .8; }
+@keyframes glowpulse { 50% { box-shadow: 0 6px 28px rgba(255,170,60,.65); } }
+.skin-label .outfit { font-family: var(--body); font-size: 12px; color: var(--gold); letter-spacing: .02em; }
+
+/* HUD score */
+.score-box { display: grid; gap: 2px; justify-items: start; }
+.score { display: flex; align-items: center; gap: 8px; font-family: var(--display); font-size: 36px; line-height: 1; color: var(--cream); font-variant-numeric: tabular-nums;
+  -webkit-text-stroke: 2px rgba(20,33,26,.85); paint-order: stroke fill; text-shadow: 0 3px 0 rgba(20,33,26,.6); }
+.mult { font-weight: 400; font-size: 16px; padding: 2px 8px; border-radius: 999px; background: var(--gold); color: #3a2205; -webkit-text-stroke: 0; text-shadow: none; }
+.dist-small { font-family: var(--display); font-size: 15px; color: var(--muted); -webkit-text-stroke: 1px rgba(20,33,26,.7); paint-order: stroke fill; }
+.hunt-row { display: flex; gap: 2px; margin-top: 3px; }
+.banner { align-self: center; margin-top: 9vh; display: grid; justify-items: center; gap: 2px; text-align: center; padding: 10px 22px; border-radius: 18px;
+  background: linear-gradient(180deg, rgba(40,28,8,.88), rgba(20,14,4,.82)); border: 1px solid rgba(255,201,60,.45); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+.banner b { font-family: var(--display); font-weight: 400; font-size: 26px; color: var(--gold); letter-spacing: .02em; }
+.banner small { font-size: 13px; color: var(--cream); opacity: .9; }
+.banner.show { animation: bannerin 2.3s ease forwards; }
+@keyframes bannerin { 0% { opacity: 0; transform: translateY(-14px) scale(.92); } 8% { opacity: 1; transform: none; } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
+.vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse 120% 90% at 50% 45%, rgba(0,0,0,0) 55%, rgba(8,6,2,.42) 100%); }
+.speedlines { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .35s;
+  background: repeating-conic-gradient(from 0deg at 50% 46%, rgba(255,240,200,.0) 0deg 4deg, rgba(255,240,200,.16) 4deg 4.6deg);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 46%, transparent 32%, #000 78%); mask-image: radial-gradient(ellipse at 50% 46%, transparent 32%, #000 78%); }
+body.boosting .speedlines { opacity: 1; animation: spin 0.5s linear infinite; }
+@keyframes spin { to { transform: rotate(4.6deg); } }
+
+/* Results: level up + missions */
+.card { max-height: 100%; overflow-y: auto; }
+#over .card { gap: 12px; padding: 20px 18px; }
+#over .stats div { padding: 5px 4px; }
+#over .stats dd { font-size: 20px; }
+#over .stats .big dd { font-size: 28px; }
+.levelup { display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; background: linear-gradient(135deg, rgba(255,201,60,.3), rgba(255,122,47,.25)); border: 1px solid rgba(255,201,60,.5); animation: pop .5s ease-out 2; }
+.next-unlock { margin: 0; font-size: 13px; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 8px; }
+.next-unlock b { color: var(--cream); }
+.next-unlock i { flex: 0 0 64px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+.next-unlock i span { display: block; height: 100%; background: var(--gold); }
+.levelup b { font-family: var(--display); font-weight: 400; font-size: 24px; color: var(--gold); }
+.levelup span { font-size: 12.5px; color: var(--cream); }
+.mission-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; text-align: left; }
+.mission { display: grid; grid-template-columns: 26px 1fr auto; gap: 4px 10px; align-items: center; padding: 10px; border-radius: 14px; background: rgba(255,255,255,.05); }
+.mission .tick { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.08); font-size: 14px; color: transparent; grid-row: span 2; }
+.mission.done .tick { background: var(--leaf); color: #14211a; }
+.mission .mt { font-size: 14px; font-weight: 600; line-height: 1.3; }
+.mission.done .mt { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(255,255,255,.3); }
+.mission .bar { grid-column: 2; height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
+.mission .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold-deep), var(--gold)); }
+.mission .mv { grid-column: 3; grid-row: 1 / span 2; font-family: var(--display); font-size: 14px; color: var(--muted); text-align: right; display: grid; gap: 4px; justify-items: end; }
+.mission-list.compact .mission { padding: 7px 9px; }
+.mission-list.compact .mt { font-size: 12.5px; }
+.skipbtn { padding: 5px 9px; border-radius: 9px; font-family: var(--display); font-size: 13px; background: rgba(95,212,255,.18); color: #bfefff; display: inline-flex; align-items: center; gap: 3px; }
+.skipbtn svg { width: 14px; height: 14px; }
+.panel-body { padding: 4px 14px 18px; overflow-y: auto; display: grid; gap: 12px; touch-action: pan-y; }
+.level-card { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; align-items: center; padding: 12px 14px; border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255,201,60,.18), rgba(255,122,47,.12)); border: 1px solid rgba(255,201,60,.3); }
+.level-card .lv { grid-row: span 2; width: 58px; height: 58px; border-radius: 16px; display: grid; place-items: center; background: var(--gold); color: #3a2205; font-family: var(--display); font-size: 28px; }
+.level-card b { font-family: var(--display); font-weight: 400; font-size: 20px; }
+.level-card small { color: var(--muted); font-size: 12.5px; }
+.hunt-card { display: grid; gap: 8px; padding: 12px 14px; border-radius: 16px; background: rgba(255,255,255,.05); }
+.hunt-card b { font-family: var(--display); font-weight: 400; font-size: 18px; color: var(--gold); }
+.hunt-card small { color: var(--muted); font-size: 12.5px; }
+.hunt-card .letters { display: flex; gap: 6px; }
+.hunt-card .letters i { width: 36px; height: 40px; font-size: 20px; font-style: normal; display: grid; place-items: center; border-radius: 10px; font-family: var(--display); background: rgba(255,255,255,.08); color: rgba(255,244,223,.4); }
+.hunt-card .letters i.got { background: linear-gradient(180deg, #ffe08a, var(--gold-deep)); color: #4a2600; }
+
+/* Chest */
+.chest-body { justify-items: center; text-align: center; }
+.chest-stage { position: relative; width: 220px; height: 170px; display: grid; place-items: center; }
+.chest { position: relative; width: 150px; height: 120px; }
+.chest i { position: absolute; display: block; }
+.chest .box { left: 0; right: 0; bottom: 0; height: 74px; border-radius: 10px; background: linear-gradient(180deg, #a5642a, #6e3d16); box-shadow: inset 0 -8px 0 rgba(0,0,0,.25), 0 10px 20px rgba(0,0,0,.35); border: 4px solid #ffc93c; border-top-width: 6px; }
+.chest .lid { left: 0; right: 0; top: 4px; height: 52px; border-radius: 60px 60px 8px 8px; background: linear-gradient(180deg, #c27a34, #8a4c1c); border: 4px solid #ffc93c; transform-origin: 50% 100%; transition: transform .45s cubic-bezier(.3,1.6,.5,1); z-index: 2; }
+.chest .lock { left: 63px; top: 44px; width: 24px; height: 28px; border-radius: 6px; background: #ffe08a; border: 3px solid #b86f00; z-index: 3; transition: opacity .2s; }
+.chest .rays { left: -40px; right: -40px; top: -40px; bottom: -10px; border-radius: 50%; background: radial-gradient(circle, rgba(255,224,138,.9), rgba(255,201,60,0) 65%); opacity: 0; transition: opacity .4s; z-index: 0; }
+.chest.shake { animation: shake .5s ease-in-out; }
+@keyframes shake { 20%,60% { transform: rotate(-4deg); } 40%,80% { transform: rotate(4deg); } }
+.chest.open .lid { transform: translateY(-34px) rotate(-18deg); }
+.chest.open .lock { opacity: 0; }
+.chest.open .rays { opacity: 1; }
+.chest-reward { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); display: grid; justify-items: center; gap: 4px; padding: 8px 14px; border-radius: 14px; background: rgba(16,28,20,.9); border: 1px solid rgba(255,201,60,.5); animation: pop .4s ease-out; z-index: 5; white-space: nowrap; }
+.chest-reward b { font-family: var(--display); font-weight: 400; font-size: 24px; color: var(--gold); display: inline-flex; align-items: center; gap: 6px; }
+.chest-reward b svg, .chest-reward b .coin-ico { width: 24px; height: 24px; }
+.chest-count { margin: 0; font-family: var(--display); font-size: 18px; }
+.chest-actions { display: grid; gap: 8px; width: 100%; max-width: 320px; }
+.odds { margin: 0; font-size: 11.5px; color: var(--muted); }
+.offer-hero { display: grid; gap: 6px; padding: 16px; border-radius: 18px; text-align: center; background: linear-gradient(160deg, rgba(255,122,47,.35), rgba(255,201,60,.18)); border: 1px solid rgba(255,201,60,.45); }
+.offer-hero b { font-family: var(--display); font-weight: 400; font-size: 28px; color: var(--gold); }
+.offer-hero ul { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 6px; text-align: left; }
+.offer-hero li { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.offer-hero li svg, .offer-hero li .coin-ico { width: 22px; height: 22px; flex: none; }
+.offer-hero .was { font-size: 12px; color: var(--muted); }
+.offer-timer { font-family: var(--display); font-size: 15px; color: var(--ember); }
+.hero-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.hero-card { position: relative; display: grid; gap: 3px; padding: 10px; border-radius: 14px; background: rgba(255,255,255,.05); border: 2px solid transparent; }
+.hero-card.sel { border-color: var(--leaf); }
+.hero-card .swatch { height: 34px; border-radius: 10px; }
+.hero-card b { font-size: 15px; }
+.hero-card small { font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+.hero-card .perk { color: var(--gold); }
+.hero-card .sbtn { margin-top: 4px; min-width: 0; width: 100%; font-size: 15px; padding: 8px; }
+
+@media (max-width: 400px) {
+  .menu-top .icon-btn { width: 40px; height: 40px; border-radius: 13px; }
+  .menu-top .icon-btn svg { width: 20px; height: 20px; }
+  .menu-icons, .wallet { gap: 6px; }
+  .menu-top .chip { font-size: 15px; padding: 4px 10px 4px 5px; gap: 4px; }
+  .menu-top .chip svg { width: 18px; height: 18px; }
+  .menu-top .chip .plus { width: 16px; height: 16px; line-height: 16px; font-size: 13px; }
+  .layer { padding-left: 12px; padding-right: 12px; }
+}
+@media (max-height: 760px) { .howto { display: none; } .by { display: none; } }
+@media (max-width: 400px) {
+  .score { font-size: 30px; gap: 6px; }
+  .hud-right { gap: 6px; }
+  #hud .coins { font-size: 19px; padding: 4px 10px 4px 6px; }
+  #hud .coin-ico { width: 20px; height: 20px; }
+  #hud .shield-ico { width: 32px; height: 32px; border-radius: 11px; }
+  #hud .shield-ico svg { width: 18px; height: 18px; }
+  #hud .icon-btn { width: 42px; height: 42px; border-radius: 14px; }
+}
+@media (max-height: 700px) { .howto { display: none; } .logo { font-size: clamp(56px, 17vw, 96px); } }
+@media (prefers-reduced-motion: reduce) { .toast, .coins.pop, .panel, .msg.show { animation: none; } }
+@media (min-aspect-ratio: 1/1) { .brand { margin-top: 2vh; } .logo { font-size: clamp(56px, 11vw, 104px); } }
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Relic Rush game"></canvas>
+<div id="vignette"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div class="speedlines" id="speedlines" aria-hidden="true"></div>
+
+<div id="menu" class="layer">
+  <div class="menu-top">
+    <div class="wallet">
+      <button class="chip" type="button" data-open-shop="gems" aria-label="Gold, open store"><i class="coin-ico sm" aria-hidden="true"></i><b data-wallet="gold">0</b></button>
+      <button class="chip" type="button" data-open-shop="gems" aria-label="Gems, open store"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l4 6-9 12L3 9z" fill="#5fd4ff"/><path d="M3 9h18M9 3l3 6 3-6M12 9v12" stroke="#1d6f99" stroke-width="1.2" fill="none"/></svg><b data-wallet="gems">0</b><span class="plus" aria-hidden="true">+</span></button>
+    </div>
+    <div class="menu-icons">
+      <button id="dailyBtn" class="icon-btn" type="button" aria-label="Daily reward"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="9" width="18" height="12" rx="2" fill="#ff7a2f"/><rect x="2" y="7" width="20" height="4" rx="1.5" fill="#ffc93c"/><path d="M12 7v14" stroke="#fff4df" stroke-width="2.4"/><path d="M12 7c-2-4-6-4-6-1.5S10 7 12 7zm0 0c2-4 6-4 6-1.5S14 7 12 7z" fill="#ffc93c"/></svg></button>
+      <button id="shopBtn" class="icon-btn" type="button" aria-label="Shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z" fill="#ffc93c"/><path d="M9 10V7a3 3 0 0 1 6 0v3" stroke="#fff4df" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+      <button id="settingsBtn" class="icon-btn" type="button" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.3 5.1l-1.7-.4a6.9 6.9 0 0 1-.6 1.5l.9 1.5-1.9 1.9-1.5-.9c-.5.3-1 .5-1.5.6l-.4 1.7h-2.8l-.4-1.7a6.9 6.9 0 0 1-1.5-.6l-1.5.9-1.9-1.9.9-1.5a6.9 6.9 0 0 1-.6-1.5l-1.7-.4v-2.8l1.7-.4c.1-.5.3-1 .6-1.5l-.9-1.5 1.9-1.9 1.5.9c.5-.3 1-.5 1.5-.6l.4-1.7h2.8l.4 1.7c.5.1 1 .3 1.5.6l1.5-.9 1.9 1.9-.9 1.5c.3.5.5 1 .6 1.5l1.7.4z" fill="currentColor"/></svg></button>
+    </div>
+  </div>
+  <div class="meta-row">
+    <button id="levelChip" class="meta level" type="button" aria-label="Level and score multiplier"></button>
+    <button id="missionsBtn" class="meta" type="button" aria-label="Missions"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z" fill="#f2e3c0"/><path d="M15 3v4h4" fill="#d9c49a"/><path d="M9 11h7M9 14h7M9 17h5" stroke="#7a5230" stroke-width="1.6" stroke-linecap="round"/></svg><span class="count">0/3</span></button>
+    <button id="chestBtn" class="meta" type="button" aria-label="Relic chests"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10a5 5 0 0 1 5-5h8a5 5 0 0 1 5 5v1H3z" fill="#b8742c"/><rect x="3" y="11" width="18" height="9" rx="1.5" fill="#8f5520"/><rect x="3" y="10" width="18" height="2.4" fill="#ffc93c"/><rect x="10.5" y="10" width="3" height="5" rx="1" fill="#ffe08a"/></svg><span class="count">0</span></button>
+    <button id="huntMenu" class="meta hunt" type="button" aria-label="Relic Hunt letters"></button>
+    <button id="powerChip" class="meta power" type="button" aria-label="Choose your power"></button>
+  </div>
+  <button id="offerBtn" class="offer-strip" type="button" hidden><b>Starter Pack</b><span>No ads · 30 gems · 3,000 gold · 2 chests</span><em class="left"></em></button>
+  <header class="brand">
+    <h1 class="logo"><span>Relic</span><span>Rush</span></h1>
+  </header>
+  <div class="menu-bottom">
+    <div class="best-chip">Best <b id="bestMenu">0</b></div>
+    <div class="skin-pick" aria-label="Choose explorer">
+      <button id="skinPrev" class="icon-btn" type="button" aria-label="Previous explorer">‹</button>
+      <div class="skin-label"><span id="skinName">Rex</span><small id="skinOutfit" class="outfit">Explorer</small><small id="skinPrice" hidden>Locked</small></div>
+      <button id="skinNext" class="icon-btn" type="button" aria-label="Next explorer">›</button>
+    </div>
+    <div class="booster-tray" id="boosterTray" aria-label="Boosters for the next run"></div>
+    <button id="playBtn" class="btn primary" type="button" disabled>Loading…</button>
+    <div class="howto" aria-label="Controls">
+      <span><b>↑</b>Jump</span><span><b>↓</b>Slide</span><span><b>← →</b>Move &amp; turn</span><span><b>2× tap</b>Power</span>
+    </div>
+  </div>
+</div>
+
+<div id="hud" class="layer" hidden>
+  <div class="hud-top">
+    <div class="score-box">
+      <div class="score"><span id="score">0</span><b class="mult" id="multBadge">×1</b></div>
+      <div class="dist-small"><span id="dist">0</span> m</div>
+      <div class="hunt-row" id="huntHud" aria-label="Relic Hunt letters"></div>
+    </div>
+    <div class="hud-right">
+      <div class="shield-ico" id="shieldIco" hidden aria-label="Shield active"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5z" fill="currentColor"/></svg></div>
+      <div class="shield-ico" id="magnetIco" hidden aria-label="Magnet active" style="color:#ff7a6b"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h4v8a3 3 0 0 0 6 0V3h4v8a7 7 0 0 1-14 0z" fill="currentColor"/><path d="M5 3h4v3H5zM15 3h4v3h-4z" fill="#e8eef2"/></svg></div>
+      <div class="shield-ico mul-ico" id="mulIco" hidden aria-label="Double gold">2×</div>
+      <div class="coins" id="coinsBox"><i class="coin-ico" aria-hidden="true"></i><span id="coins">0</span></div>
+      <button id="pauseBtn" class="icon-btn" type="button" aria-label="Pause">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.5" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1.5" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </div>
+  <button id="powerBtn" class="power-gauge" type="button" aria-label="Use power"><svg viewBox="0 0 24 24" aria-hidden="true"></svg><small>2× tap</small></button>
+  <div id="banner" class="banner" hidden role="status"></div>
+  <div id="toast" class="toast" hidden></div>
+</div>
+
+<div id="pause" class="layer center" hidden>
+  <div class="card">
+    <h2>Paused</h2>
+    <div class="actions">
+      <button id="resumeBtn" class="btn primary" type="button">Resume</button>
+      <button id="quitBtn" class="btn" type="button">Main menu</button>
+    </div>
+  </div>
+</div>
+
+<div id="over" class="layer center" hidden>
+  <div class="card">
+    <h2 id="overTitle">Crashed!</h2>
+    <p class="sub" id="overSub">The ruins win this time.</p>
+    <span class="newbest" id="newBest" hidden>NEW BEST</span>
+    <dl class="stats">
+      <div><dt>Distance</dt><dd id="oDist">0 m</dd></div>
+      <div><dt>Gold</dt><dd id="oCoins">0</dd></div>
+      <div id="oGemsRow" hidden><dt>Gems</dt><dd id="oGems">0</dd></div>
+      <div><dt>Multiplier</dt><dd id="oMult">×1</dd></div>
+      <div class="big"><dt>Score</dt><dd id="oScore">0</dd></div>
+      <div><dt>Best</dt><dd id="oBest">0</dd></div>
+    </dl>
+ <div id="levelUp" class="levelup" hidden></div>
+    <ul id="overMissions" class="mission-list compact" aria-label="Missions"></ul>
+    <p id="nextUnlock" class="next-unlock" hidden></p>
+    <div class="actions">
+      <button id="doubleBtn" class="btn ad" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4" fill="currentColor" opacity=".25"/><path d="M10 9l5 3-5 3z" fill="currentColor"/></svg>Double your gold</button>
+      <button id="againBtn" class="btn primary" type="button">Run again</button>
+      <button id="menuBtn" class="btn" type="button">Main menu</button>
+    </div>
+  </div>
+</div>
+
+<div id="revive" class="layer center" hidden>
+  <div class="card revive-card" role="dialog" aria-labelledby="reviveTitle">
+    <h2 id="reviveTitle">Keep running?</h2>
+    <div class="ring" id="reviveRing"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="bg" cx="50" cy="50" r="42"/><circle class="fg" cx="50" cy="50" r="42" pathLength="100"/></svg><span aria-hidden="true">❤</span></div>
+    <div class="actions">
+      <button id="reviveAd" class="btn primary ad" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z" fill="currentColor"/></svg>Revive free</button>
+      <button id="reviveGems" class="btn gemsbtn" type="button">Revive · <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l4 6-9 12L3 9z" fill="#5fd4ff"/><path d="M3 9h18M9 3l3 6 3-6M12 9v12" stroke="#1d6f99" stroke-width="1.2" fill="none"/></svg><span id="reviveCost">1</span></button>
+      <button id="reviveNo" class="linkbtn" type="button">No thanks</button>
+    </div>
+  </div>
+</div>
+
+<div id="shop" class="layer sheet" hidden>
+  <div class="panel" role="dialog" aria-labelledby="shopTitle">
+    <header class="panel-head">
+      <h2 id="shopTitle">Shop</h2>
+      <div class="wallet">
+      <button class="chip" type="button" data-open-shop="gems" tabindex="-1" aria-label="Gold, open store"><i class="coin-ico sm" aria-hidden="true"></i><b data-wallet="gold">0</b></button>
+      <button class="chip" type="button" data-open-shop="gems" tabindex="-1" aria-label="Gems, open store"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l4 6-9 12L3 9z" fill="#5fd4ff"/><path d="M3 9h18M9 3l3 6 3-6M12 9v12" stroke="#1d6f99" stroke-width="1.2" fill="none"/></svg><b data-wallet="gems">0</b><span class="plus" aria-hidden="true">+</span></button>
+    </div>
+      <button id="shopClose" class="icon-btn" type="button" aria-label="Close">✕</button>
+    </header>
+    <nav id="shopTabs" class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="boosters">Boosters</button>
+      <button type="button" role="tab" data-tab="upgrades">Upgrades</button>
+      <button type="button" role="tab" data-tab="heroes">Heroes</button>
+      <button type="button" role="tab" data-tab="gems">Gems</button>
+    </nav>
+    <ul id="shopList" class="shop-list"></ul>
+  </div>
+</div>
+
+<div id="daily" class="layer sheet" hidden>
+  <div class="panel" role="dialog" aria-labelledby="dailyTitle">
+    <header class="panel-head"><h2 id="dailyTitle">Daily reward</h2><button class="icon-btn" type="button" aria-label="Close" onclick="document.getElementById('shopClose').click()">✕</button></header>
+    <ul id="dailyGrid" class="daily-grid"></ul>
+    <div class="daily-actions">
+      <button id="dailyDouble" class="btn primary ad" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z" fill="currentColor"/></svg>Claim ×2</button>
+      <button id="dailyClaim" class="btn" type="button">Claim</button>
+    </div>
+    <p id="dailyNote" class="daily-note"></p>
+  </div>
+</div>
+
+<div id="missions" class="layer sheet" hidden>
+  <div class="panel" role="dialog" aria-labelledby="missionsTitle">
+    <header class="panel-head"><h2 id="missionsTitle">Missions</h2><button class="icon-btn close-ov" type="button" aria-label="Close">✕</button></header>
+    <div class="panel-body">
+      <div id="levelCard" class="level-card"></div>
+      <ul id="missionList" class="mission-list"></ul>
+      <div id="huntCard" class="hunt-card"></div>
+    </div>
+  </div>
+</div>
+
+<div id="chests" class="layer sheet" hidden>
+  <div class="panel" role="dialog" aria-labelledby="chestsTitle">
+    <header class="panel-head"><h2 id="chestsTitle">Relic chests</h2><button class="icon-btn close-ov" type="button" aria-label="Close">✕</button></header>
+    <div class="panel-body chest-body">
+      <div class="chest-stage" id="chestStage">
+        <div class="chest" id="chestArt" aria-hidden="true"><i class="lid"></i><i class="box"></i><i class="lock"></i><i class="rays"></i></div>
+        <div class="chest-reward" id="chestReward" hidden></div>
+      </div>
+      <p class="chest-count" id="chestCount"></p>
+      <div class="chest-actions" id="chestActions"></div>
+      <p class="odds" id="chestOdds"></p>
+    </div>
+  </div>
+</div>
+
+<div id="offer" class="layer sheet" hidden>
+  <div class="panel offer-panel" role="dialog" aria-labelledby="offerTitle">
+    <header class="panel-head"><h2 id="offerTitle">Offer</h2><button class="icon-btn close-ov" type="button" aria-label="Close">✕</button></header>
+    <div class="panel-body" id="offerBody"></div>
+  </div>
+</div>
+
+<div id="settings" class="layer sheet" hidden>
+  <div class="panel" role="dialog" aria-labelledby="settingsTitle">
+    <header class="panel-head"><h2 id="settingsTitle">Settings</h2><button id="settingsClose" class="icon-btn" type="button" aria-label="Close">✕</button></header>
+    <ul id="settingsList" class="settings-list"></ul>
+  </div>
+</div>
+
+<div id="doc" class="layer sheet" hidden>
+  <div class="panel" role="dialog" aria-label="Document">
+    <header class="panel-head"><h2>&nbsp;</h2><button id="docClose" class="icon-btn" type="button" aria-label="Close">✕</button></header>
+    <iframe id="docFrame" class="doc-frame" title="Document" src="about:blank"></iframe>
+  </div>
+</div>
+
+<div id="msg" class="msg" hidden role="status"></div>
+
+<!--APP:START-->
+<script type="module" src="game.js"></script>
+<script>
+  if ("serviceWorker" in navigator && location.protocol === "https:" && location.hostname !== "localhost") {
+    addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  }
+</script>
+<!--APP:END-->
+</body>
+</html>

@@ -1,0 +1,42 @@
+RELIC RUSH — CREDITS
+Game design & code: Akinware (akinware.live)
+
+3D models & animation
+- Characters Rex, Ada, Wren, Old King: Quaternius — quaternius.com — CC0 1.0 (public domain)
+- Their run, jump, roll, hit, death, idle and dance animations: retargeted from the Universal Animation Library
+  by Quaternius — quaternius.com — CC0 1.0 (public domain)
+- Premium explorers (Vex, Brakka, Ilyra, Sir Aldric) and their animations: KayKit Character Pack: Adventurers
+  by Kay Lousberg — kaylousberg.com — CC0 1.0
+- Jungle trees, palms, carved columns, curbs, rock spires, rope bridges, zipline, mine cart, every obstacle
+  (stone gates, idol heads, totems, standing rocks, fallen trunks, fire troughs), torches, urns, rubble, coins,
+  gems, power-ups and hunt medallions, and all surface
+  textures (stone road, temple walls, rock, wood, bark, leaves, palm fronds, ferns, vines): made procedurally
+  by Akinware (scenery.js, props.js, tools/gen-textures.py)
+- The tiger: built with "three.js Procedural Animals" by Majid Manzarpour and contributors — MIT License
+  (github.com/majidmanzarpour/threejs-procedural-animals; full licence text in vendor/procedural-animals/LICENSE).
+  Its lion skeleton, sculpt, gaits and attack are used with a tiger coat painted by Akinware (tiger/species.js).
+
+Sound
+- Tiger roars and growls (tiger-roar.mp3, tiger-snarl.mp3, tiger-growl.mp3, tiger-growl2.mp3): from 0 A.D.
+  by Wildfire Games — wildfiregames.com — licensed under CC BY-SA 3.0 (creativecommons.org/licenses/by-sa/3.0/).
+  Trimmed, normalised and converted to MP3 by Akinware; these four files are shared under the same licence.
+- Music (trimmed, made to loop and level-matched by Akinware; these files are shared under the same licences):
+  · music-menu.ogg — "Mortimer's Chipdisko" by Lukas Nystrand (Mortimer Twang), from SuperTux — CC BY-SA (and GPL)
+  · music-idol.ogg — "Invincible" by Wansti, from SuperTux — CC BY-SA (and GPL v2+)
+  Licence texts: creativecommons.org/licenses/by-sa/3.0/ and creativecommons.org/licenses/by-sa/4.0/
+- In-run music (music-sunrise.ogg, music-canopy.ogg, music-ember.ogg, music-moon.ogg): original chip-disco
+  tracks by Akinware, composed and rendered with tools/chipgen.py.
+- All other sound effects are synthesized in the game.
+
+Software
+- three.js — MIT License — Copyright © 2010-2025 three.js authors
+- three.js Procedural Animals — MIT License — Copyright © 2026 Majid Manzarpour and contributors
+- Capacitor, @capacitor/app — MIT License — Ionic
+- @capacitor-community/admob — MIT License
+- cordova-plugin-purchase / capacitor-plugin-cdv-purchase — MIT License — Jean-Christophe Hoelt
+- esbuild — MIT License
+
+Font
+- Lilita One by Juan Montoreano — SIL Open Font License 1.1
+
+Inspired by the classic endless-runner genre; all game code is original.

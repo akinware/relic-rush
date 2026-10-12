@@ -1,0 +1,64 @@
+{
+  "appId": "live.akinware.relicrush",
+  "appName": "Relic Rush",
+  "versionName": "1.0.0",
+  "admob": {
+    "appId": "ca-app-pub-3940256099942544~3347511713",
+    "rewarded": "ca-app-pub-3940256099942544/5224354917",
+    "interstitial": "ca-app-pub-3940256099942544/1033173712",
+    "testing": true
+  },
+  "ads": {
+    "interstitialEveryRuns": 1,
+    "interstitialMinGapSeconds": 45,
+    "interstitialGraceRuns": 2,
+    "web": "off",
+    "adsenseClient": ""
+  },
+  "products": {
+    "starter_pack": {
+      "kind": "nonconsumable",
+      "fallbackPrice": "€3.99",
+      "gems": 30,
+      "gold": 3000,
+      "chests": 2,
+      "removeAds": true
+    },
+    "remove_ads": {
+      "kind": "nonconsumable",
+      "fallbackPrice": "€2.99",
+      "removeAds": true
+    },
+    "double_gold": {
+      "kind": "nonconsumable",
+      "fallbackPrice": "€3.99",
+      "doubleGold": true
+    },
+    "legend_pack": {
+      "kind": "nonconsumable",
+      "fallbackPrice": "€5.99",
+      "gems": 50,
+      "chests": 3,
+      "unlocks": [
+        "knight",
+        "king_gold",
+        "rainbow"
+      ]
+    },
+    "gems_small": {
+      "kind": "consumable",
+      "fallbackPrice": "€0.99",
+      "gems": 12
+    },
+    "gems_medium": {
+      "kind": "consumable",
+      "fallbackPrice": "€4.99",
+      "gems": 70
+    },
+    "gems_large": {
+      "kind": "consumable",
+      "fallbackPrice": "€9.99",
+      "gems": 160
+    }
+  }
+}

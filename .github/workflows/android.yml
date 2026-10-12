@@ -1,0 +1,120 @@
+# Builds the Android app on GitHub's servers.
+# Run it from the "Actions" tab → "Build Android app" → "Run workflow". Results appear under "Artifacts".
+#  - With the 4 signing secrets set: relic-rush-release.aab (upload this to Google Play) + a signed APK for your phone.
+#  - Without secrets: a debug APK you can install on your phone to try it.
+name: Build Android app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install
+        run: npm ci
+
+      - name: Build game
+        run: node build.mjs
+
+      - name: Prepare Android project
+        run: node android-setup.mjs
+
+      - name: Debug APK (no signing secrets yet)
+        if: env.KEYSTORE_BASE64 == ''
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Signed release (AAB for Play + APK)
+        if: env.KEYSTORE_BASE64 != ''
+        working-directory: android
+        env:
+          RELIC_KEYSTORE: ${{ github.workspace }}/upload.jks
+          RELIC_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          RELIC_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          RELIC_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > "$RELIC_KEYSTORE"
+          ./gradlew bundleRelease assembleRelease assembleDebug --no-daemon
+          rm -f "$RELIC_KEYSTORE"
+
+      - name: Collect outputs
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/bundle/release/app-release.aab out/relic-rush-release.aab 2>/dev/null || true
+          cp android/app/build/outputs/apk/release/app-release.apk out/relic-rush-release.apk 2>/dev/null || true
+          cp android/app/build/outputs/apk/debug/app-debug.apk out/relic-rush-debug.apk 2>/dev/null || true
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: relic-rush-android-${{ github.run_number }}
+          path: out/
+
+  # No Android phone? This job boots an Android emulator on GitHub, installs the debug build, opens it,
+  # starts a run and saves screenshots + the app log under the "emulator-check" artifact.
+  emulator-check:
+    needs: android
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 30
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: relic-rush-android-${{ github.run_number }}
+          path: out
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run the app in an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            adb install -r out/relic-rush-debug.apk
+            adb logcat -c
+            adb shell am start -n live.akinware.relicrush/.MainActivity
+            sleep 60
+            adb exec-out screencap -p > out/emulator-1-start.png
+            adb shell input keyevent 4
+            sleep 3
+            adb exec-out screencap -p > out/emulator-2-menu.png
+            adb shell input tap 540 1990
+            sleep 12
+            adb exec-out screencap -p > out/emulator-3-run.png
+            adb logcat -d > out/emulator-logcat.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emulator-check-${{ github.run_number }}
+          path: |
+            out/emulator-*.png
+            out/emulator-logcat.txt

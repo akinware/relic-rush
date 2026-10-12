@@ -1,0 +1,20 @@
+{
+  "appId": "live.akinware.relicrush",
+  "appName": "Relic Rush",
+  "webDir": "dist",
+  "backgroundColor": "#14211a",
+  "android": {
+    "backgroundColor": "#14211a",
+    "allowMixedContent": false,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover",
+      "style": "DARK",
+      "hidden": true
+    }
+  }
+}

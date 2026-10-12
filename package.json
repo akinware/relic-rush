@@ -1,0 +1,28 @@
+{
+  "name": "relic-rush",
+  "version": "1.0.0",
+  "description": "Relic Rush — endless jungle runner by Akinware",
+  "scripts": {
+    "build": "node build.mjs",
+    "android": "node build.mjs && node android-setup.mjs",
+    "serve": "npx --yes serve dist"
+  },
+  "author": "Akinware",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@capacitor-community/admob": "^8.2.1",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.5.3",
+    "@fontsource/lilita-one": "^5.3.0",
+    "capacitor-plugin-cdv-purchase": "^13.18.0",
+    "esbuild": "^0.24.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.3"
+  },
+  "private": true,
+  "type": "module"
+}
